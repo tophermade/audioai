@@ -18,17 +18,25 @@ const historyRoutes = require('./routes/history');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Detect if running in Electron
+const isElectron = process.env.ELECTRON_MODE === 'true' || process.versions.electron;
 
-// Security middleware
+
+// Security middleware - adjusted for Electron
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://stackpath.bootstrapcdn.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://stackpath.bootstrapcdn.com", "https://cdnjs.cloudflare.com"],
       scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://code.jquery.com", "https://stackpath.bootstrapcdn.com"],
-      fontSrc: ["'self'", "https://cdn.jsdelivr.net", "https://stackpath.bootstrapcdn.com"],
+      fontSrc: ["'self'", "https://cdn.jsdelivr.net", "https://stackpath.bootstrapcdn.com", "https://cdnjs.cloudflare.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      mediaSrc: ["'self'", "blob:", "data:"]
+      mediaSrc: ["'self'", "blob:", "data:"],
+      connectSrc: ["'self'", "https://api.openai.com", "https://api.elevenlabs.io"],
+      ...(isElectron && {
+        // Allow Electron-specific protocols
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://code.jquery.com", "https://stackpath.bootstrapcdn.com", "'unsafe-eval'"]
+      })
     }
   }
 }));
@@ -86,11 +94,26 @@ const startServer = async () => {
     await performStartupValidation();
     
     // Start the server
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`🌐 Visit http://localhost:${PORT} to use the application`);
-      console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
+      if (!isElectron) {
+        console.log(`🌐 Visit http://localhost:${PORT} to use the application`);
+        console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
+      } else {
+        console.log(`🖥️  Running in Electron mode`);
+      }
     });
+
+    // Graceful shutdown for Electron
+    if (isElectron) {
+      process.on('SIGTERM', () => {
+        console.log('🛑 Shutting down server gracefully...');
+        server.close(() => {
+          console.log('✅ Server closed');
+          process.exit(0);
+        });
+      });
+    }
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);
     process.exit(1);

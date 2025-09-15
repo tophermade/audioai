@@ -2,27 +2,104 @@
   "name": "aiaudio-translator",
   "version": "1.0.0",
   "description": "Multilingual text-to-speech app using OpenAI and ElevenLabs",
-  "main": "server.js",
+  "main": "main.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "electron": "electron .",
+    "electron-dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "build": "electron-builder",
+    "build-win": "electron-builder --win",
+    "build-mac": "electron-builder --mac",
+    "build-linux": "electron-builder --linux",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --publish=never"
   },
-  "keywords": ["translation", "text-to-speech", "openai", "elevenlabs", "multilingual"],
+  "keywords": [
+    "translation",
+    "text-to-speech",
+    "openai",
+    "elevenlabs",
+    "multilingual"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "pug": "^3.0.2",
-    "openai": "^4.11.0",
     "axios": "^1.5.0",
-    "multer": "^1.4.5-lts.1",
-    "dotenv": "^16.3.1",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.10.0",
     "helmet": "^7.0.0",
-    "express-rate-limit": "^6.10.0"
+    "multer": "^1.4.5-lts.1",
+    "openai": "^4.11.0",
+    "pug": "^3.0.2"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "concurrently": "^9.2.1",
+    "electron": "^38.1.0",
+    "electron-builder": "^26.0.12",
+    "nodemon": "^3.0.1",
+    "wait-on": "^8.0.5"
+  },
+  "build": {
+    "appId": "com.aiaudio.translator",
+    "productName": "AI Audio Translator",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "server.js",
+      "package.json",
+      "config/**/*",
+      "routes/**/*",
+      "views/**/*",
+      "public/**/*",
+      "node_modules/**/*",
+      "!node_modules/.cache/**/*",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}"
+    ],
+    "extraResources": [
+      {
+        "from": "public/audio",
+        "to": "audio"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "public/favicon.ico"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "public/favicon.icns"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "public/favicon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

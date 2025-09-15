@@ -1,3 +1,4 @@
+# VIBE Coded Sooo YMMV 🤙
 # AI Audio Translator
 
 A comprehensive multilingual text-to-speech application that translates English text into 9 different languages and generates high-quality audio pronunciations using OpenAI and ElevenLabs APIs.

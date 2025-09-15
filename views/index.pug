@@ -1,0 +1,256 @@
+extends layout
+
+block content
+  // API Keys Section
+  .row.mb-4
+    .col-lg-8.mx-auto
+      .card.shadow.border-warning
+        .card-header.bg-warning.text-dark
+          h4.card-title.mb-0
+            i.fas.fa-key.me-2
+            | API Keys Configuration
+        .card-body
+          p.text-muted.mb-3 Enter your API keys below. These will be stored locally in your browser and used for all translations and audio generation.
+          .row
+            .col-md-6.mb-3
+              label.form-label(for='openaiKey')
+                i.fab.fa-openai.me-1
+                strong OpenAI API Key
+              input.form-control#openaiKey(
+                type='password',
+                placeholder='sk-...',
+                autocomplete='off'
+              )
+              .form-text
+                i.fas.fa-info-circle.me-1
+                | Get your key from 
+                a(href='https://platform.openai.com/api-keys', target='_blank') OpenAI Platform
+            .col-md-6.mb-3
+              label.form-label(for='elevenlabsKey')
+                i.fas.fa-microphone.me-1
+                strong ElevenLabs API Key
+              input.form-control#elevenlabsKey(
+                type='password',
+                placeholder='sk_...',
+                autocomplete='off'
+              )
+              .form-text
+                i.fas.fa-info-circle.me-1
+                | Get your key from 
+                a(href='https://elevenlabs.io/app/settings/api-keys', target='_blank') ElevenLabs Settings
+          .d-flex.justify-content-between.align-items-center
+            .form-check
+              input.form-check-input#showKeys(type='checkbox')
+              label.form-check-label(for='showKeys') Show API Keys
+            .btn-group
+              button.btn.btn-outline-primary#saveKeysBtn(type='button')
+                i.fas.fa-save.me-1
+                | Save Keys
+              button.btn.btn-outline-secondary#clearKeysBtn(type='button')
+                i.fas.fa-trash.me-1
+                | Clear Keys
+          .mt-3#keyStatus
+            .alert.alert-info.d-none#keysSaved
+              i.fas.fa-check-circle.me-2
+              | API keys saved successfully!
+            .alert.alert-warning.d-none#keysMissing
+              i.fas.fa-exclamation-triangle.me-2
+              | Please enter both API keys to use the application.
+
+  .row
+    .col-lg-8.mx-auto
+      .card.shadow
+        .card-header.bg-primary.text-white
+          h2.card-title.mb-0
+            i.fas.fa-globe.me-2
+            | Multilingual Text Translator & Audio Generator
+        .card-body
+          p.text-muted Enter your text below and select the languages you want to translate it into. Audio will be generated for each translation.
+          
+          form#translationForm
+            .mb-3
+              label.form-label(for='inputText')
+                i.fas.fa-edit.me-1
+                strong Original Text
+              textarea.form-control#inputText(
+                rows='4',
+                placeholder='Enter your text here...',
+                maxlength='5000',
+                required
+              )
+              .form-text
+                span#charCount 0
+                | / 5000 characters
+            
+            .mb-3
+              label.form-label
+                i.fas.fa-language.me-1
+                strong Select Target Languages
+              .mb-2
+                .btn-group.btn-group-sm(role='group')
+                  button.btn.btn-outline-primary#selectDefaultBtn(type='button')
+                    i.fas.fa-star.me-1
+                    | Quick Select (10 languages)
+                  button.btn.btn-outline-secondary#selectAllBtn(type='button')
+                    i.fas.fa-globe.me-1
+                    | Select All
+                  button.btn.btn-outline-warning#clearAllBtn(type='button')
+                    i.fas.fa-times.me-1
+                    | Clear All
+              .row#languageSelection
+                each region, regionName in languagesByRegion
+                  .mx-auto.mb-3
+                    h6.text-muted.text-uppercase.fw-bold.mb-2= regionName.charAt(0).toUpperCase() + regionName.slice(1)
+                    .row
+                      each language in region
+                        .col-xl-3.col-lg-4.col-md-6.col-sm-6.mb-2
+                          .form-check
+                            input.form-check-input.language-checkbox(
+                              type='checkbox',
+                              value=language.code,
+                              id=`lang-${language.code}`,
+                              data-name=language.name,
+                              data-flag=language.flag,
+                              data-openai-code=language.openaiCode
+                            )
+                            label.form-check-label(for=`lang-${language.code}`)
+                              span.me-2= language.flag
+                              = language.name
+              .form-text.text-muted
+                i.fas.fa-info-circle.me-1
+                | Select at least one language for translation. More languages will take longer to process.
+            
+            .d-grid.gap-2.d-md-flex.justify-content-md-end
+              button.btn.btn-primary.btn-lg#translateBtn(type='submit')
+                i.fas.fa-language.me-2
+                | Translate & Generate Audio
+                .spinner-border.spinner-border-sm.ms-2.d-none#loadingSpinner
+  
+  // Results Section
+  .row.mt-4#resultsSection(style='display: none;')
+    .col-8.mx-auto
+      .card.shadow
+        .card-header.bg-success.text-white
+          h3.card-title.mb-0
+            i.fas.fa-check-circle.me-2
+            | Translation Results
+        .card-body
+          .alert.alert-info#originalTextDisplay(style='display: none;')
+            h5.mb-2
+              i.fas.fa-flag-usa.me-2
+              | Original Text (English):
+            p.mb-0#originalTextContent
+          
+          .row.mt-3#translationResults
+            // Translation cards will be inserted here dynamically
+  
+  // Voice Selection Section
+  .row.mt-3#voiceSelectionSection(style='display: none;')
+    .col-8.mx-auto
+      .card.shadow
+        .card-header.bg-info.text-white
+          h3.card-title.mb-0
+            i.fas.fa-microphone.me-2
+            | Voice Selection
+        .card-body
+          p.text-muted 
+            i.fas.fa-info-circle.me-1
+            | Will is pre-selected as the default voice for all languages. You can choose custom voices below or proceed with the defaults.
+          .row#voiceSelectionCards
+            // Voice selection cards will be inserted here dynamically
+          
+          .d-grid.gap-2.mt-3
+            button.btn.btn-secondary#loadVoicesBtn
+              i.fas.fa-sync.me-2
+              | Load Available Voices
+              .spinner-border.spinner-border-sm.ms-2.d-none#voicesLoadingSpinner
+
+  // Audio Generation Section
+  .row.mt-3#audioSection(style='display: none;')
+    .col-8.mx-auto
+      .card.shadow
+        .card-header.bg-success.text-white
+          h3.card-title.mb-0
+            i.fas.fa-volume-up.me-2
+            | Audio Generation
+        .card-body
+          .d-grid.gap-2
+            button.btn.btn-success.btn-lg#generateAudioBtn
+              i.fas.fa-play.me-2
+              | Generate Audio with Will's Voice
+              .spinner-border.spinner-border-sm.ms-2.d-none#audioLoadingSpinner
+          
+          .mt-3#audioResults
+            // Audio players will be inserted here dynamically
+
+  // Progress Section
+  .row.mt-3#progressSection(style='display: none;')
+    .col-8.mx-auto
+      .card.shadow
+        .card-header.bg-warning.text-dark
+          h4.card-title.mb-0
+            i.fas.fa-hourglass-half.me-2
+            | Processing Status
+        .card-body
+          .progress.mb-3
+            .progress-bar.progress-bar-striped.progress-bar-animated#progressBar(
+              role='progressbar',
+              style='width: 0%',
+              aria-valuenow='0',
+              aria-valuemin='0',
+              aria-valuemax='100'
+            )
+          p.text-center.mb-0#progressText Please wait while we process your request...
+
+  // About Section
+  .row.mt-5#about
+    .col-8.mx-auto
+      .card.shadow
+        .card-header.bg-secondary.text-white
+          h3.card-title.mb-0
+            i.fas.fa-info-circle.me-2
+            | About This Application
+        .card-body
+          .row
+            ul.list-group.list-group-flush
+              li.list-group-item
+                i.fas.fa-robot.me-2
+                | AI-powered translation using OpenAI GPT
+              li.list-group-item
+                i.fas.fa-microphone.me-2
+                | High-quality audio generation with ElevenLabs
+              li.list-group-item
+                i.fas.fa-mobile-alt.me-2
+                | Responsive design for all devices
+              li.list-group-item
+                i.fas.fa-download.me-2
+                | Download audio files
+              li.list-group-item
+                i.fas.fa-history.me-2
+                | Translation history (when database is available)
+
+block scripts
+  script.
+    // Initialize character counter and language selection
+    $(document).ready(function() {
+      const inputText = $('#inputText');
+      const charCount = $('#charCount');
+      
+      inputText.on('input', function() {
+        const count = $(this).val().length;
+        charCount.text(count);
+        
+        if (count > 4500) {
+          charCount.addClass('text-warning');
+        } else if (count > 4800) {
+          charCount.addClass('text-danger');
+        } else {
+          charCount.removeClass('text-warning text-danger');
+        }
+      });
+      
+      // Initialize language selection state
+      if (typeof updateLanguageSelection === 'function') {
+        updateLanguageSelection();
+      }
+    });

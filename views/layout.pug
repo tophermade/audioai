@@ -1,0 +1,50 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    meta(name='description', content='AI-powered multilingual text translator with audio generation')
+    title= title || 'AI Audio Translator'
+    
+    // Bootstrap CSS
+    link(href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css', rel='stylesheet')
+    // Font Awesome for icons
+    link(href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', rel='stylesheet')
+    // Custom CSS
+    link(href='/css/style.css', rel='stylesheet')
+    
+  body
+    nav.navbar.navbar-expand-lg.navbar-dark.bg-primary
+      .container
+        a.navbar-brand(href='/')
+          i.fas.fa-language.me-2
+          | AI Audio Translator
+        button.navbar-toggler(type='button', data-bs-toggle='collapse', data-bs-target='#navbarNav')
+          span.navbar-toggler-icon
+        .collapse.navbar-collapse#navbarNav
+          ul.navbar-nav.ms-auto
+            li.nav-item
+              a.nav-link(href='/') Home
+            li.nav-item
+              a.nav-link(href='/history') 
+                i.fas.fa-history.me-1
+                | History
+            li.nav-item
+              a.nav-link(href='#about') About
+    
+    main.container.mt-4
+      block content
+    
+    footer.bg-light.text-center.py-3.mt-5
+      .container
+        p.mb-0.text-muted
+          | &copy; 2025 crtrdg. powered by openai and elevenlabs.
+    
+    // Bootstrap JS
+    script(src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js')
+    // jQuery
+    script(src='https://code.jquery.com/jquery-3.7.1.min.js')
+    // Custom JS
+    script(src='/js/app.js')
+    
+    block scripts

@@ -1,0 +1,222 @@
+extends layout
+
+block content
+  .row
+    .col-12
+      .card.shadow
+        .card-header.bg-primary.text-white
+          h2.card-title.mb-0
+            i.fas.fa-history.me-2
+            | Translation History
+        .card-body
+          .d-flex.justify-content-between.align-items-center.mb-3
+            h4.mb-0
+              i.fas.fa-list.me-2
+              | Past Translations
+            .btn-group
+              button.btn.btn-outline-primary#refreshBtn
+                i.fas.fa-sync.me-1
+                | Refresh
+              button.btn.btn-outline-danger#clearAllBtn(style='display: none;')
+                i.fas.fa-trash.me-1
+                | Clear All
+
+          .table-responsive
+            table.table.table-hover
+              thead.table-dark
+                tr
+                  th Original Text
+                  th Languages
+                  th Voice Used
+                  th Date
+                  th Actions
+              tbody#translationsTableBody
+                // Will be populated by JavaScript from localStorage
+
+          .text-center.py-5#noTranslationsMessage(style='display: none;')
+            i.fas.fa-inbox.fa-3x.text-muted.mb-3
+            h4.text-muted No translations found
+            p.text-muted
+              | You haven't created any translations yet. 
+              a(href='/') Start translating now!
+
+          .row.mt-3
+            .col-12
+              .text-center.text-muted
+                small#translationCount
+                  | Loading translation history...
+
+
+block scripts
+  script.
+    // LocalStorage management constants
+    const STORAGE_KEY = 'aiAudioTranslationHistory';
+    
+    // Language flag mapping
+    const languageFlags = {
+      'zh-CN': '🇨🇳',
+      'ru': '🇷🇺',
+      'pl': '🇵🇱',
+      'es': '🇪🇸',
+      'pt': '🇵🇹',
+      'de': '🇩🇪',
+      'fr': '🇫🇷',
+      'ja': '🇯🇵',
+      'ko': '🇰🇷'
+    };
+
+    $(document).ready(function() {
+      // Load and display translations from localStorage
+      loadTranslationHistory();
+      
+      // Delete translation
+      $(document).on('click', '.deleteBtn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const translationId = $(this).data('translation-id');
+        if (confirm('Are you sure you want to delete this translation?')) {
+          deleteTranslation(translationId);
+        }
+      });
+
+      // Refresh page
+      $('#refreshBtn').on('click', function() {
+        loadTranslationHistory();
+      });
+
+      // Clear all translations
+      $('#clearAllBtn').on('click', function() {
+        if (confirm('Are you sure you want to delete ALL translations? This action cannot be undone.')) {
+          clearAllTranslations();
+        }
+      });
+    });
+
+    function getTranslationHistory() {
+      try {
+        const history = localStorage.getItem(STORAGE_KEY);
+        return history ? JSON.parse(history) : [];
+      } catch (error) {
+        console.error('Failed to load translation history:', error);
+        return [];
+      }
+    }
+
+    function loadTranslationHistory() {
+      const translations = getTranslationHistory();
+      const tbody = $('#translationsTableBody');
+      
+      tbody.empty();
+      
+      if (translations.length === 0) {
+        $('#noTranslationsMessage').show();
+        $('#clearAllBtn').hide();
+        $('#translationCount').text('No translations found');
+        return;
+      }
+      
+      $('#noTranslationsMessage').hide();
+      $('#clearAllBtn').show();
+      
+      translations.forEach(translation => {
+        const row = createTranslationRow(translation);
+        tbody.append(row);
+      });
+      
+      $('#translationCount').text(`Showing ${translations.length} translation${translations.length === 1 ? '' : 's'}`);
+    }
+
+    function createTranslationRow(translation) {
+      const date = new Date(translation.createdAt).toLocaleString();
+      const voiceName = translation.translations[0]?.voiceName || 'Will (Default)';
+      const hasAudio = translation.translations.some(t => t.audioGenerated);
+      
+      return `
+        <tr data-translation-id="${translation.id}">
+          <td>
+            <div class="original-text" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${translation.originalText}">
+              ${translation.originalText}
+            </div>
+          </td>
+          <td>
+            <span class="badge bg-info me-1">${translation.translations.length}</span>
+            language${translation.translations.length === 1 ? '' : 's'}
+          </td>
+          <td>
+            <span class="badge ${hasAudio ? 'bg-success' : 'bg-secondary'}">${voiceName}</span>
+          </td>
+          <td>
+            <small class="text-muted">${date}</small>
+          </td>
+          <td>
+            <div class="btn-group btn-group-sm">
+              <a class="btn btn-outline-primary" href="/history/${translation.id}/view">
+                <i class="fas fa-eye me-1"></i>
+                View
+              </a>
+              <button class="btn btn-outline-danger deleteBtn" data-translation-id="${translation.id}">
+                <i class="fas fa-trash me-1"></i>
+                Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    function deleteTranslation(translationId) {
+      try {
+        const history = getTranslationHistory();
+        const filteredHistory = history.filter(item => item.id !== translationId);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredHistory));
+        
+        $(`tr[data-translation-id="${translationId}"]`).fadeOut(300, function() {
+          $(this).remove();
+          loadTranslationHistory(); // Refresh the display
+        });
+        
+        showAlert('Translation deleted successfully', 'success');
+      } catch (error) {
+        console.error('Error deleting translation:', error);
+        showAlert('Failed to delete translation', 'danger');
+      }
+    }
+
+    function clearAllTranslations() {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        loadTranslationHistory(); // Refresh the display
+        showAlert('All translations cleared successfully', 'success');
+      } catch (error) {
+        console.error('Error clearing translations:', error);
+        showAlert('Failed to clear translations', 'danger');
+      }
+    }
+
+    function showAlert(message, type) {
+      $('.custom-alert').remove();
+      
+      const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show custom-alert" role="alert">
+          <i class="fas fa-${getAlertIcon(type)} me-2"></i>
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      `;
+      
+      $('main .container').prepend(alertHtml);
+      
+      setTimeout(() => {
+        $('.custom-alert').alert('close');
+      }, 5000);
+    }
+
+    function getAlertIcon(type) {
+      const icons = {
+        'success': 'check-circle',
+        'danger': 'exclamation-circle',
+        'warning': 'exclamation-triangle',
+        'info': 'info-circle'
+      };
+      return icons[type] || 'info-circle';
+    }

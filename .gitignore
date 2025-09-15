@@ -85,3 +85,6 @@ temp/
 
 # PM2 logs
 .pm2/
+
+# Electron build output
+dist/
